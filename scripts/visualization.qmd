@@ -1,0 +1,73 @@
+---
+title: "visualization with ggplot2 and more"
+format: html
+---
+
+```{r}
+library(readr)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(janitor) # expedite cleaning and exploring data
+library(scales) # scale functions for visualization
+```
+
+```{r}
+escape_raw <- read_csv("https://knb.ecoinformatics.org/knb/d1/mn/v2/object/urn%3Auuid%3Af119a05b-bbe7-4aea-93c6-85434dcb1c5e")
+```
+
+```{r}
+escape <- escape_raw %>% clean_names()
+```
+
+```{r}
+annual_esc <- escape %>% 
+  filter(species %in% c("Sockeye", "Chum", "Pink", "Coho", "Chinook")) %>% 
+  mutate(year = lubridate::year(sample_date)) %>% 
+  group_by(species, sasap_region, year) %>% 
+  summarize(escapement = sum(daily_count))
+
+escape
+
+```
+
+```{r}
+ggplot(data = annual_esc, mapping = aes(x = species, y = escapement)) + 
+  geom_col(aes(fill = species)) + 
+  geom_point()
+
+```
+
+```{r}
+annual_esc %>% 
+  filter(year == 1974, species %in% c("Chum", "Pink")) %>% 
+  ggplot(aes(x = species, y = escapement)) + 
+    geom_violin()
+
+```
+
+```{r}
+library(DT)
+
+locations <- escape %>% 
+  distinct(location, latitude, longitude) %>% 
+  drop_na()
+
+datatable(locations)
+
+```
+
+```{r}
+library(leaflet)
+leaflet(locations) %>% 
+  addTiles() %>% 
+  addMarkers(
+    lng = ~ longitude,
+    lat = ~ latitude,
+    popup = ~ locations
+  )
+
+```
+
+
+
